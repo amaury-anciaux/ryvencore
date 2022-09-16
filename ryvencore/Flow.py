@@ -1,6 +1,6 @@
 from .Base import Base, Event
 from .Connection import Connection, DataConnection, ExecConnection
-from .FlowExecutor import DataFlowOptimized, FlowExecutor
+from .FlowExecutor import DataFlowOptimized, FlowExecutor, ManualFlowExecutor
 from .Node import Node
 from .NodePort import NodePort
 from .RC import FlowAlg, PortObjPos
@@ -38,11 +38,14 @@ class Flow(Base):
 
         # special executors
         self.executor_data_opt = DataFlowOptimized(self)
+        self.executor_manual = ManualFlowExecutor(self)
         self.executor: FlowExecutor = None
         self.running_with_executor = False
         self._update_running_with_executor()
         #   additional data structures for executors
         self.node_successors = {}
+
+
 
 
     def load(self, data):
@@ -127,7 +130,7 @@ class Flow(Base):
 
         node.prepare_removal()
         self.nodes.remove(node)
-        # del self.node_successors[node]
+        del self.node_successors[node]
         self.flow_changed()
 
         # self.emit_event('node removed', (node,))    # ALPHA
@@ -253,11 +256,13 @@ class Flow(Base):
 
 
     def _update_running_with_executor(self):
-        self.running_with_executor = self.alg_mode in (FlowAlg.DATA_OPT, )
+        self.running_with_executor = self.alg_mode in (FlowAlg.DATA_OPT, FlowAlg.MANUAL,)
 
         if self.running_with_executor:
             if self.alg_mode == FlowAlg.DATA_OPT:
                 self.executor = self.executor_data_opt
+            elif self.alg_mode == FlowAlg.MANUAL:
+                self.executor = self.executor_manual
         else:
             self.executor = None
 
@@ -265,6 +270,10 @@ class Flow(Base):
     def flow_changed(self):
         self.executor_data_opt.flow_changed = True
 
+    def triggered_run(self):
+        #nodes_without_successors = [n for n, successors in self.node_successors.items() if len(successors) == 0]
+
+        self.executor.run_flow(self.nodes)
 
     def data(self) -> dict:
         return {

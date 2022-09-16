@@ -224,3 +224,27 @@ class DataFlowOptimized(FlowExecutor):
         # decrease wait count of successors
         for c in out.connections:
             self.decrease_wait(c.inp.node)
+
+
+class ManualFlowExecutor(FlowExecutor):
+    """
+    Defines a manual flow executor, which blocks the requests to update individual nodes until
+    the method run_flow is called, then triggering full execution. The nodes are still able to set
+    their value independently so that they can still react to UI changes.
+    """
+    def __init__(self, flow):
+        super().__init__(flow)
+        self.executor = DataFlowOptimized(flow)
+
+    def input(self, node, index):
+        return self.executor.input(node, index)
+
+    def set_output_val(self, node, index, val):
+        """Only sets the value in the node, doesn't run the flow as DataFlowOptimized would."""
+        node.outputs[index].set_val(val)
+
+    def run_flow(self, nodes):
+        """Executes a run on all nodes. Relies on DataFlowOptimized to run this efficiently (i.e. do
+        re-run nodes it already has."""
+        for n in nodes:
+            self.executor.update_node(n)
