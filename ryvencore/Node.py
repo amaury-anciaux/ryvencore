@@ -325,6 +325,16 @@ class Node(Base):
             logger.enable()
             # logger.enabled = True
 
+    def log_error(self, msg):
+        self.script.logs_manager.default_loggers['global'].log(logging.ERROR, msg=f'{self.title} ({self.GLOBAL_ID}): {msg}')
+
+    def log_warning(self, msg):
+        self.script.logs_manager.default_loggers['global'].log(logging.WARNING, msg=f'{self.title} ({self.GLOBAL_ID}): {msg}')
+
+    def log_info(self, msg):
+        self.script.logs_manager.default_loggers['global'].log(logging.INFO, msg=f'{self.title} ({self.GLOBAL_ID}): {msg}')
+
+
     #   PORTS
 
     def create_input(self, label: str = '', type_: str = 'data', add_data={}, insert: int = None):
